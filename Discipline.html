@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Discipline</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                padding: 40px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            h1 {
+                text-align: center;
+                color: #667eea;
+                margin-bottom: 30px;
+                font-size: 2.5em;
+            }
+
+            .task-group {
+                margin-bottom: 20px;
+            }
+
+            .task {
+                display: flex;
+                align-items: center;
+                padding: 12px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                transition: all 0.3s;
+            }
+
+            .task:hover {
+                background: #e9ecef;
+                transform: translateX(5px);
+            }
+
+            .task h3 {
+                margin: 0;
+                flex: 1;
+                color: #333;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 4px;
+            }
+
+            .task h3:hover {
+                background: #d0d8e0;
+            }
+
+            .task h3.editing {
+                background: white;
+                border: 2px solid #667eea;
+            }
+
+            input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                cursor: pointer;
+                accent-color: #667eea;
+                margin-right: 10px;
+            }
+
+            .task-input {
+                flex: 1;
+                padding: 5px;
+                border: 2px solid #667eea;
+                border-radius: 4px;
+                font-size: 1em;
+            }
+
+            .delete-btn {
+                background: #ff6b6b;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-left: 10px;
+            }
+
+            .delete-btn:hover {
+                background: #ff5252;
+            }
+
+            .add-task-btn {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                width: 100%;
+                margin-bottom: 20px;
+                font-size: 1em;
+            }
+
+            .add-task-btn:hover {
+                background: #764ba2;
+            }
+
+            .stats {
+                background: #f0f4ff;
+                border-radius: 10px;
+                padding: 20px;
+                margin-top: 30px;
+                border-left: 4px solid #667eea;
+            }
+
+            .stat-row {
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+
+            .stat-row h3 {
+                flex: 1;
+                margin: 0;
+                color: #333;
+            }
+
+            input[type="number"] {
+                width: 100px;
+                padding: 8px;
+                border: 2px solid #667eea;
+                border-radius: 5px;
+                font-size: 1em;
+            }
+        </style>
+        <script>
+            function saveData() {
+                const tasks = [];
+                let allChecked = true;
+                document.querySelectorAll('.task').forEach((task) => {
+                    const name = task.querySelector('h3').textContent;
+                    const checked = task.querySelector('input[type="checkbox"]').checked;
+                    tasks.push({ name, checked });
+                    if (!checked) allChecked = false;
+                });
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+
+                const daysDidInput = document.querySelector('.stats input[type="number"]:nth-child(1)');
+                const daysDid = parseInt(daysDidInput.value) || 0;
+                const daysMissedInput = document.querySelector('.stats input[type="number"]:nth-child(2)');
+                const daysMissed = parseInt(daysMissedInput.value) || 0;
+                const streakInput = document.querySelector('.stats input[type="number"]:nth-child(3)');
+                let streak = parseInt(streakInput.value) || 0;
+
+                if (allChecked) {
+                    daysDidInput.value = daysDid + 1;
+                    streakInput.value = streak + 1;
+                } else {
+                    daysMissedInput.value = daysMissed + 1;
+                    streakInput.value = 0;
+                }
+
+                document.querySelectorAll('.stats input[type="number"]').forEach((input, index) => {
+                    localStorage.setItem(`stat_${index}`, input.value);
+                });
+            }
+
+            function loadData() {
+                const savedTasks = localStorage.getItem('tasks');
+                if (savedTasks) {
+                    const tasks = JSON.parse(savedTasks);
+                    const taskGroup = document.querySelector('.task-group');
+                    taskGroup.innerHTML = '';
+                    tasks.forEach(task => {
+                        addTask(task.name, task.checked);
+                    });
+                }
+
+                document.querySelectorAll('.stats input[type="number"]').forEach((input, index) => {
+                    const saved = localStorage.getItem(`stat_${index}`);
+                    if (saved !== null) {
+                        input.value = saved;
+                    }
+                });
+            }
+
+            function addTask(name = '', checked = false) {
+                const taskGroup = document.querySelector('.task-group');
+                const task = document.createElement('div');
+                task.className = 'task';
+
+                const h3 = document.createElement('h3');
+                h3.textContent = name || 'New Task';
+                h3.onclick = () => editTask(h3);
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = checked;
+                checkbox.onchange = saveData;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => {
+                    task.remove();
+                    saveData();
+                };
+
+                task.appendChild(checkbox);
+                task.appendChild(h3);
+                task.appendChild(deleteBtn);
+                taskGroup.appendChild(task);
+            }
+
+            function editTask(h3) {
+                const input = document.createElement('input');
+                input.className = 'task-input';
+                input.value = h3.textContent;
+                input.onblur = () => saveEdit(h3, input);
+                input.onkeypress = (e) => {
+                    if (e.key === 'Enter') saveEdit(h3, input);
+                };
+
+                h3.replaceWith(input);
+                input.focus();
+                input.select();
+
+                function saveEdit(h3, input) {
+                    const newH3 = document.createElement('h3');
+                    newH3.textContent = input.value || 'New Task';
+                    newH3.onclick = () => editTask(newH3);
+                    input.replaceWith(newH3);
+                    saveData();
+                }
+            }
+
+            window.onload = loadData;
+        </script>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>⚡ DISCIPLINE</h1>
+            
+            <button class="add-task-btn" onclick="addTask()">+ Add Task</button>
+            
+            <div class="task-group">
+                <div class="task">
+                    <input type="checkbox">
+                    <h3>Wake Up At 5AM</h3>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-row"><h3>Days Did:</h3> <input type="number" onchange="saveData()"></div>
+                <div class="stat-row"><h3>Days Didn't:</h3> <input type="number" onchange="saveData()"></div>
+                <div class="stat-row"><h3>Streak:</h3> <input type="number" onchange="saveData()"></div>
+            </div>
+        </div>
+    </body>
+</html>
